@@ -108,15 +108,33 @@ int main(int argc, const char** argv) {
     mju_error("Could not initialize GLFW");
   }
 
-  const char* glsl_version = "#version 130";
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
   // create window, make OpenGL context current, request v-sync
   GLFWwindow* window = glfwCreateWindow(1200, 900, "Demo", NULL, NULL);
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
 
+
+  // initialize visualization data structures
+  mjv_defaultCamera(&cam);
+  mjv_defaultOption(&opt);
+  mjv_defaultScene(&scn);
+  mjr_defaultContext(&con);
+
+  // create scene and context
+  mjv_makeScene(m, &scn, 2000);
+  mjr_makeContext(m, &con, mjFONTSCALE_150);
+
+  // install GLFW mouse and keyboard callbacks
+  glfwSetKeyCallback(window, keyboard);
+  glfwSetCursorPosCallback(window, mouse_move);
+  glfwSetMouseButtonCallback(window, mouse_button);
+  glfwSetScrollCallback(window, scroll);
+
+  const char* glsl_version = "#version 130";
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  
 //   Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -149,22 +167,6 @@ int main(int argc, const char** argv) {
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
-
-  // initialize visualization data structures
-  mjv_defaultCamera(&cam);
-  mjv_defaultOption(&opt);
-  mjv_defaultScene(&scn);
-  mjr_defaultContext(&con);
-
-  // create scene and context
-  mjv_makeScene(m, &scn, 2000);
-  mjr_makeContext(m, &con, mjFONTSCALE_150);
-
-  // install GLFW mouse and keyboard callbacks
-  glfwSetKeyCallback(window, keyboard);
-  glfwSetCursorPosCallback(window, mouse_move);
-  glfwSetMouseButtonCallback(window, mouse_button);
-  glfwSetScrollCallback(window, scroll);
 
   // run main loop, target real-time simulation and 60 fps rendering
   while (!glfwWindowShouldClose(window)) {
