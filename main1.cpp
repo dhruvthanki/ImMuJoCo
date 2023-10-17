@@ -27,16 +27,23 @@ const char* XML_PATH = "/home/dhruv/Documents/Github/mujoco_menagerie/agility_ca
 
 // keyboard callback
 void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods) {
+  ImGuiIO &io = ImGui::GetIO();
+  if (!io.WantCaptureKeyboard){
+
   // backspace: reset simulation
   if (act==GLFW_PRESS && key==GLFW_KEY_BACKSPACE) {
     mj_resetData(m, d);
     mj_forward(m, d);
+  }
   }
 }
 
 
 // mouse button callback
 void mouse_button(GLFWwindow* window, int button, int act, int mods) {
+  ImGuiIO &io = ImGui::GetIO();
+  if (!io.WantCaptureMouse){
+
   // update button state
   button_left = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS);
   button_middle = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS);
@@ -44,11 +51,15 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
 
   // update mouse position
   glfwGetCursorPos(window, &lastx, &lasty);
+  }
 }
 
 
 // mouse move callback
 void mouse_move(GLFWwindow* window, double xpos, double ypos) {
+  ImGuiIO &io = ImGui::GetIO();
+  if (!io.WantCaptureMouse){
+
   // no buttons down: nothing to do
   if (!button_left && !button_middle && !button_right) {
     return;
@@ -80,19 +91,22 @@ void mouse_move(GLFWwindow* window, double xpos, double ypos) {
 
   // move camera
   mjv_moveCamera(m, action, dx/height, dy/height, &scn, &cam);
+  }
 }
 
 
 // scroll callback
 void scroll(GLFWwindow* window, double xoffset, double yoffset) {
-  // emulate vertical mouse motion = 5% of window height
-  mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &scn, &cam);
+  ImGuiIO &io = ImGui::GetIO();
+  if (!io.WantCaptureMouse){
+    // emulate vertical mouse motion = 5% of window height
+    mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &scn, &cam);
+  }
 }
 
 
 // main function
 int main(int argc, const char** argv) {
-
   // load and compile model
   char error[1000] = "Could not load binary model";
   m = mj_loadXML(XML_PATH, 0, error, 1000);
@@ -135,38 +149,39 @@ int main(int argc, const char** argv) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   
-//   Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; 
 
-    // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    //ImGui::StyleColorsLight();
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  //ImGui::StyleColorsLight();
 
-    // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplGlfw_SetCallbacksChainForAllWindows(true);
+  ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != nullptr);
+  // Load Fonts
+  // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
+  // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
+  // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+  // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+  // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
+  // - Read 'docs/FONTS.md' for more instructions and details.
+  // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+  // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
+  //io.Fonts->AddFontDefault();
+  //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
+  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+  //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
+  //IM_ASSERT(font != nullptr);
 
   // run main loop, target real-time simulation and 60 fps rendering
   while (!glfwWindowShouldClose(window)) {
@@ -190,54 +205,54 @@ int main(int argc, const char** argv) {
     mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
     mjr_render(viewport, &scn, &con);
 
-	// Start the Dear ImGui frame
+	  // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-	{
-            static float f = 0.0f;
-            static int counter = 0;
+	  {
+      static float f = 0.0f;
+      static int counter = 0;
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+      ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            // ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            // ImGui::Checkbox("Another Window", &show_another_window);
+      ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+      // ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+      // ImGui::Checkbox("Another Window", &show_another_window);
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            // ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+      ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+      // ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
+      if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+          counter++;
+      ImGui::SameLine();
+      ImGui::Text("counter = %d", counter);
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
+      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+      ImGui::End();
     }
 
-	{
-		// Create a window called "My First Tool", with a menu bar.
-		ImGui::Begin("My First Tool");
+    {
+      // Create a window called "My First Tool", with a menu bar.
+      ImGui::Begin("My First Tool");
 
-		// Generate samples and plot them
-		float samples[100];
-		for (int n = 0; n < 100; n++)
-		    samples[n] = sinf(n * 0.2f + ImGui::GetTime() * 1.5f);
-		ImGui::PlotLines("Samples", samples, 100);
+      // Generate samples and plot them
+      float samples[100];
+      for (int n = 0; n < 100; n++)
+          samples[n] = sinf(n * 0.2f + ImGui::GetTime() * 1.5f);
+      ImGui::PlotLines("Samples", samples, 100);
 
-		ImGui::End();
-	}
+      ImGui::End();
+    }
 
-	// Rendering
-        ImGui::Render();
-        // int display_w, display_h;
-        glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
-        // glViewport(0, 0, &viewport.width, display_h);
-        // glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-        // glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	  // Rendering
+    ImGui::Render();
+    // int display_w, display_h;
+    glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
+    // glViewport(0, 0, &viewport.width, display_h);
+    // glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
@@ -246,7 +261,7 @@ int main(int argc, const char** argv) {
     glfwSwapBuffers(window);
   }
 
-//   // Cleanup
+  // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
