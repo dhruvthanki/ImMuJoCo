@@ -3,7 +3,6 @@
 #include <vector>
 #include <iostream>
 
-// #include "imgui.h"
 #include <imgui.h>
 #include "implot.h"
 #include "imgui_impl_glfw.h"
@@ -28,6 +27,7 @@ double lastx = 0;
 double lasty = 0;
 
 const char* XML_PATH = "/home/dhruv/Documents/Github/mujoco_menagerie/agility_cassie/scene.xml";
+
 
 // keyboard callback
 void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods) {
@@ -108,6 +108,7 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   }
 }
 
+
 // utility structure for realtime plot
 struct ScrollingBuffer {
     int MaxSize;
@@ -134,21 +135,6 @@ struct ScrollingBuffer {
     }
 };
 
-// utility structure for realtime plot
-struct RollingBuffer {
-    float Span;
-    ImVector<ImVec2> Data;
-    RollingBuffer() {
-        Span = 10.0f;
-        Data.reserve(2000);
-    }
-    void AddPoint(float x, float y) {
-        float xmod = fmodf(x, Span);
-        if (!Data.empty() && xmod < Data.back().x)
-            Data.shrink(0);
-        Data.push_back(ImVec2(xmod, y));
-    }
-};
 
 // main function
 int main(int argc, const char** argv) {
@@ -211,18 +197,6 @@ int main(int argc, const char** argv) {
   ImGui_ImplGlfw_SetCallbacksChainForAllWindows(true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  std::vector<float> plot_queue, plot_time;
-  plot_queue.reserve(100);
-  plot_time.reserve(100);
-  for(int ii=0; ii<100; ii++)
-  {
-    plot_queue.push_back(0.0);
-    plot_time.push_back(0.0);
-  }
-  // plot_queue.erase(plot_queue.begin());
-  // plot_queue.push_back(2);
-  // std::cout << plot_queue.capacity();
-
   // Load Fonts
   // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
   // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
@@ -267,49 +241,29 @@ int main(int argc, const char** argv) {
     mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
     mjr_render(viewport, &scn, &con);
 
-    plot_queue.erase(plot_queue.begin());
-    plot_queue.push_back((float)d->qpos[2]);
-    float* plot_queue_ref = plot_queue.data();
-    plot_time.erase(plot_time.begin());
-    plot_time.push_back((float)d->time);
-    float* plot_time_ref = plot_time.data();
-
-    ImGui::Begin("My Window");
-      static ScrollingBuffer sdata1, sdata2;
-      static RollingBuffer   rdata1, rdata2;
-      ImVec2 mouse = ImGui::GetMousePos();
+    if(ImGui::Begin("My Window"))
+    {
+      static ScrollingBuffer sdata2;
       static float t = 0;
       t += ImGui::GetIO().DeltaTime;
-      sdata1.AddPoint(t, mouse.x * 0.0005f);
-      rdata1.AddPoint(t, mouse.x * 0.0005f);
-      sdata2.AddPoint(t, mouse.y * 0.0005f);
-      rdata2.AddPoint(t, mouse.y * 0.0005f);
+      // t += (float) d->time;
+      sdata2.AddPoint(t, (float)d->qvel[5]);
 
       static float history = 10.0f;
       ImGui::SliderFloat("History",&history,1,30,"%.1f s");
-      rdata1.Span = history;
-      rdata2.Span = history;
 
       static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
 
       if (ImPlot::BeginPlot("##Scrolling", ImVec2(-1,150))) {
         ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
         ImPlot::SetupAxisLimits(ImAxis_X1,t - history, t, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1,0,1);
+        ImPlot::SetupAxisLimits(ImAxis_Y1,-1,1);
         ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL,0.5f);
-        ImPlot::PlotShaded("Mouse X", &sdata1.Data[0].x, &sdata1.Data[0].y, sdata1.Data.size(), -INFINITY, 0, sdata1.Offset, 2 * sizeof(float));
         ImPlot::PlotLine("Mouse Y", &sdata2.Data[0].x, &sdata2.Data[0].y, sdata2.Data.size(), 0, sdata2.Offset, 2*sizeof(float));
         ImPlot::EndPlot();
       }
-      if (ImPlot::BeginPlot("##Rolling", ImVec2(-1,150))) {
-        ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
-        ImPlot::SetupAxisLimits(ImAxis_X1,0,history, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1,0,1);
-        ImPlot::PlotLine("Mouse X", &rdata1.Data[0].x, &rdata1.Data[0].y, rdata1.Data.size(), 0, 0, 2 * sizeof(float));
-        ImPlot::PlotLine("Mouse Y", &rdata2.Data[0].x, &rdata2.Data[0].y, rdata2.Data.size(), 0, 0, 2 * sizeof(float));
-        ImPlot::EndPlot();
-      }
-    ImGui::End();
+      ImGui::End();
+    }
 
 	  // Rendering
     ImGui::Render();
@@ -321,15 +275,15 @@ int main(int argc, const char** argv) {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		// Update and Render additional Platform Windows
-        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
-        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            GLFWwindow* backup_current_context = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
-        }
+    // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+    //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        glfwMakeContextCurrent(backup_current_context);
+    }
 		
     // swap OpenGL buffers (blocking call due to v-sync)
     glfwSwapBuffers(window);
